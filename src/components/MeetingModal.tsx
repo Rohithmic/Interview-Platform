@@ -20,13 +20,13 @@ function MeetingModal({
   const [meetingUrl, setMeetingUrl] = useState("");
   const { createInstantMeeting, joinMeeting } = useMeetingActions();
 
-  const handleStart = () => {
+  const handleStart = async () => {
     if (isJoinMeeting) {
       // if it's a full URL extract meeting ID
       const meetingId = meetingUrl.split("/").pop();
       if (meetingId) joinMeeting(meetingId);
     } else {
-      createInstantMeeting();
+      await createInstantMeeting();
     }
 
     setMeetingUrl("");

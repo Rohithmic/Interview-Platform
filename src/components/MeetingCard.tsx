@@ -12,6 +12,7 @@ import {
 import { CalendarIcon } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
+import CommentDialog from "./CommentDialog";
 
 type Interview = Doc<"interviews">;
 
@@ -73,6 +74,12 @@ function MeetingCard({ interview }: { interview: Interview }) {
           <Button variant="outline" className="w-full" disabled>
             Waiting to Start
           </Button>
+        )}
+
+        {status === "completed" && (
+          <div className="mt-2">
+            <CommentDialog interviewId={interview._id} />
+          </div>
         )}
       </CardContent>
     </Card>

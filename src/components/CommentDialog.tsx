@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Textarea } from "./ui/textarea";
+import { useUserRole } from "@/hooks/useUserRole";
 
 function CommentDialog({ interviewId }: { interviewId: Id<"interviews"> }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +37,7 @@ function CommentDialog({ interviewId }: { interviewId: Id<"interviews"> }) {
   const addComment = useMutation(api.comments.addComment);
   const users = useQuery(api.users.getUsers);
   const existingComments = useQuery(api.comments.getComments, { interviewId });
+  const { isInterviewer, isCandidate } = useUserRole();
 
   const handleSubmit = async () => {
     if (!comment.trim()) return toast.error("Please enter comment");
@@ -72,30 +74,37 @@ function CommentDialog({ interviewId }: { interviewId: Id<"interviews"> }) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       {/* TRIGGER BUTTON */}
-      <DialogTrigger asChild>
-        <Button variant="secondary" className="w-full">
-          <MessageSquareIcon className="h-4 w-4 mr-2" />
-          Add Comment
-        </Button>
-      </DialogTrigger>
+      {isInterviewer && (
+        <DialogTrigger asChild>
+          <Button variant="secondary" className="w-full font-bold border-2 border-primary">
+            <MessageSquareIcon className="h-4 w-4 mr-2" />
+            Add Feedback & Rating
+          </Button>
+        </DialogTrigger>
+      )}
+      {!isInterviewer && existingComments.length > 0 && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full font-semibold border-primary mb-2">
+            View Feedback & Ratings
+          </Button>
+        </DialogTrigger>
+      )}
 
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Interview Comment</DialogTitle>
+          <DialogTitle>Interview Feedback & Rating</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           {existingComments.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium">Previous Comments</h4>
+                <h4 className="text-sm font-medium">Previous Feedback</h4>
                 <Badge variant="outline">
-                  {existingComments.length} Comment
+                  {existingComments.length} Feedback
                   {existingComments.length !== 1 ? "s" : ""}
                 </Badge>
               </div>
-
-              {/* DISPLAY EXISTING COMMENTS */}
               <ScrollArea className="h-[240px]">
                 <div className="space-y-4">
                   {existingComments.map((comment, index) => {
@@ -141,46 +150,51 @@ function CommentDialog({ interviewId }: { interviewId: Id<"interviews"> }) {
             </div>
           )}
 
-          <div className="space-y-4">
-            {/* RATING */}
-            <div className="space-y-2">
-              <Label>Rating</Label>
-              <Select value={rating} onValueChange={setRating}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select rating" />
-                </SelectTrigger>
-                <SelectContent>
-                  {[1, 2, 3, 4, 5].map((value) => (
-                    <SelectItem key={value} value={value.toString()}>
-                      <div className="flex items-center gap-2">
-                        {renderStars(value)}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          {/* Only show the form to interviewers */}
+          {isInterviewer && (
+            <div className="space-y-4">
+              {/* RATING */}
+              <div className="space-y-2">
+                <Label>Rating</Label>
+                <Select value={rating} onValueChange={setRating}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select rating" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <SelectItem key={value} value={value.toString()}>
+                        <div className="flex items-center gap-2">
+                          {renderStars(value)}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            {/* COMMENT */}
-            <div className="space-y-2">
-              <Label>Your Comment</Label>
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Share your detailed comment about the candidate..."
-                className="h-32"
-              />
+              {/* COMMENT */}
+              <div className="space-y-2">
+                <Label>Your Feedback</Label>
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder="Share your detailed feedback about the candidate..."
+                  className="h-32"
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* BUTTONS */}
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit}>Submit</Button>
-        </DialogFooter>
+        {isInterviewer && (
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit}>Submit</Button>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

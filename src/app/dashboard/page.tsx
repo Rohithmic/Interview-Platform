@@ -1,8 +1,8 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../../convex/_generated/api";
-import { Doc, Id } from "../../../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
+import { Doc, Id } from "../../../convex/_generated/dataModel";
 import toast from "react-hot-toast";
 import LoaderUI from "@/components/LoaderUI";
 import { getCandidateInfo, groupInterviews } from "@/lib/utils";
@@ -144,7 +144,11 @@ function DashboardPage() {
                                 </Button>
                               </div>
                             )}
-                            <CommentDialog interviewId={interview._id} />
+                            {(interview.status === "completed" || interview.status === "succeeded" || interview.status === "failed") && (
+                              <div className="mt-2">
+                                <CommentDialog interviewId={interview._id} />
+                              </div>
+                            )}
                           </CardFooter>
                         </Card>
                       );
@@ -158,4 +162,4 @@ function DashboardPage() {
     </div>
   );
 }
-export default DashboardPage;
+export default DashboardPage; 
