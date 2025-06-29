@@ -8,14 +8,12 @@ import { useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import { useRouter } from "next/navigation";
 import MeetingModal from "@/components/MeetingModal";
-import LoaderUI from "@/components/LoaderUI";
-import { Loader2Icon } from "lucide-react";
 import MeetingCard from "@/components/MeetingCard";
 
 export default function Home() {
   const router = useRouter();
 
-  const { isInterviewer, isCandidate, isLoading } = useUserRole();
+  const { isInterviewer, isCandidate } = useUserRole();
   const interviews = useQuery(api.interviews.getMyInterviews);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<"start" | "join">();
@@ -34,8 +32,6 @@ export default function Home() {
         router.push(`/${title.toLowerCase()}`);
     }
   };
-
-  if (isLoading) return <LoaderUI />;
 
   return (
     <div className="container max-w-7xl mx-auto p-6">
@@ -80,9 +76,15 @@ export default function Home() {
           </div>
 
           <div className="mt-8">
+            {/* Optimized: Show skeleton cards while loading interviews */}
             {interviews === undefined ? (
-              <div className="flex justify-center py-12">
-                <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="animate-pulse bg-muted rounded-lg h-32"
+                  />
+                ))}
               </div>
             ) : interviews.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -100,4 +102,4 @@ export default function Home() {
       )}
     </div>
   );
-} 
+}

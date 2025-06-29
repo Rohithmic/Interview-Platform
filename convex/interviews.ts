@@ -17,12 +17,21 @@ export const getMyInterviews = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return [];
 
+    // First get the user to find their clerkId
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .first();
+
+    if (!user) return [];
+
+    // Then get interviews for this user
     const interviews = await ctx.db
       .query("interviews")
-      .withIndex("by_candidate_id", (q) => q.eq("candidateId", identity.subject))
+      .withIndex("by_candidate_id", (q) => q.eq("candidateId", user.clerkId))
       .collect();
 
-    return interviews!;
+    return interviews;
   },
 });
 

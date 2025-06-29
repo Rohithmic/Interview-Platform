@@ -1,6 +1,5 @@
 "use client";
 
-import LoaderUI from "@/components/LoaderUI";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useRouter } from "next/navigation";
 import InterviewScheduleUI from "@/app/schedule/InterviewScheduleUI";
@@ -10,7 +9,7 @@ function SchedulePage() {
 
   const { isInterviewer, isLoading } = useUserRole();
 
-  if (isLoading) return <LoaderUI />;
+  if (isLoading) return null;
   if (!isInterviewer) return router.push("/");
 
   return <InterviewScheduleUI />;

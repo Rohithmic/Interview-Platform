@@ -1,165 +1,117 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import ActionCard from "@/components/ActionCard";
+import { QUICK_ACTIONS } from "@/constants";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useQuery } from "convex/react";
+import { useState } from "react";
 import { api } from "../../../convex/_generated/api";
-import { Doc, Id } from "../../../convex/_generated/dataModel";
-import toast from "react-hot-toast";
-import LoaderUI from "@/components/LoaderUI";
-import { getCandidateInfo, groupInterviews } from "@/lib/utils";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { INTERVIEW_CATEGORY } from "@/constants";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  CalendarIcon,
-  CheckCircle2Icon,
-  ClockIcon,
-  XCircleIcon,
-} from "lucide-react";
-import { format } from "date-fns";
-import CommentDialog from "@/components/CommentDialog";
+import { useRouter } from "next/navigation";
+import MeetingModal from "@/components/MeetingModal";
+import { Loader2Icon } from "lucide-react";
+import MeetingCard from "@/components/MeetingCard";
+import UserRoleHandler from "@/components/UserRoleHandler";
 
-type Interview = Doc<"interviews">;
+export default function Dashboard() {
+  const router = useRouter();
 
-function DashboardPage() {
-  const users = useQuery(api.users.getUsers);
-  const interviews = useQuery(api.interviews.getAllInterviews);
-  const updateStatus = useMutation(api.interviews.updateInterviewStatus);
+  const { isInterviewer, isCandidate, isLoading } = useUserRole();
+  const interviews = useQuery(api.interviews.getMyInterviews);
+  const [showModal, setShowModal] = useState(false);
+  const [modalType, setModalType] = useState<"start" | "join">();
 
-  const handleStatusUpdate = async (
-    interviewId: Id<"interviews">,
-    status: string
-  ) => {
-    try {
-      await updateStatus({ id: interviewId, status });
-      toast.success(`Interview marked as ${status}`);
-    } catch (error) {
-      toast.error("Failed to update status");
+  const handleQuickAction = (title: string) => {
+    switch (title) {
+      case "New Call":
+        setModalType("start");
+        setShowModal(true);
+        break;
+      case "Join Interview":
+        setModalType("join");
+        setShowModal(true);
+        break;
+      default:
+        router.push(`/${title.toLowerCase()}`);
     }
   };
 
-  if (!interviews || !users) return <LoaderUI />;
-
-  const groupedInterviews = groupInterviews(interviews);
+  if (isLoading) {
+    return (
+      <div className="container max-w-7xl mx-auto p-6">
+        <div className="flex justify-center items-center min-h-[50vh]">
+          <div className="text-center">
+            <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading your dashboard...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex items-center mb-8">
-        <Link href="/schedule">
-          <Button>Schedule New Interview</Button>
-        </Link>
-      </div>
+    <>
+      <UserRoleHandler />
+      <div className="container max-w-7xl mx-auto p-6">
+        {/* WELCOME SECTION */}
+        <div className="rounded-lg bg-card p-6 border shadow-sm mb-10">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">
+            Welcome back!
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            {isInterviewer
+              ? "Manage your interviews and review candidates effectively"
+              : "Access your upcoming interviews and preparations"}
+          </p>
+        </div>
 
-      <div className="space-y-8">
-        {INTERVIEW_CATEGORY.map(
-          (category) =>
-            groupedInterviews[category.id]?.length > 0 && (
-              <section key={category.id}>
-                {/* CATEGORY TITLE */}
-                <div className="flex items-center gap-2 mb-4">
-                  <h2 className="text-xl font-semibold">{category.title}</h2>
-                  <Badge variant={category.variant}>
-                    {groupedInterviews[category.id].length}
-                  </Badge>
+        {isInterviewer ? (
+          <>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {QUICK_ACTIONS.map((action) => (
+                <ActionCard
+                  key={action.title}
+                  action={action}
+                  onClick={() => handleQuickAction(action.title)}
+                />
+              ))}
+            </div>
+
+            <MeetingModal
+              isOpen={showModal}
+              onClose={() => setShowModal(false)}
+              title={modalType === "join" ? "Join Meeting" : "Start Meeting"}
+              isJoinMeeting={modalType === "join"}
+            />
+          </>
+        ) : (
+          <>
+            <div>
+              <h1 className="text-3xl font-bold">Your Interviews</h1>
+              <p className="text-muted-foreground mt-1">
+                View and join your scheduled interviews
+              </p>
+            </div>
+
+            <div className="mt-8">
+              {interviews === undefined ? (
+                <div className="flex justify-center py-12">
+                  <Loader2Icon className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {groupedInterviews[category.id].map(
-                    (interview: Interview) => {
-                      const candidateInfo = getCandidateInfo(
-                        users,
-                        interview.candidateId
-                      );
-                      const startTime = new Date(interview.startTime);
-
-                      return (
-                        <Card className="hover:shadow-md transition-all">
-                          {/* CANDIDATE INFO */}
-                          <CardHeader className="p-4">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-10 w-10">
-                                <AvatarImage src={candidateInfo.image} />
-                                <AvatarFallback>
-                                  {candidateInfo.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <CardTitle className="text-base">
-                                  {candidateInfo.name}
-                                </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                  {interview.title}
-                                </p>
-                              </div>
-                            </div>
-                          </CardHeader>
-
-                          {/* DATE &  TIME */}
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <div className="flex items-center gap-1">
-                                <CalendarIcon className="h-4 w-4" />
-                                {format(startTime, "MMM dd")}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <ClockIcon className="h-4 w-4" />
-                                {format(startTime, "hh:mm a")}
-                              </div>
-                            </div>
-                          </CardContent>
-
-                          {/* PASS & FAIL BUTTONS */}
-                          <CardFooter className="p-4 pt-0 flex flex-col gap-3">
-                            {interview.status === "completed" && (
-                              <div className="flex gap-2 w-full">
-                                <Button
-                                  className="flex-1"
-                                  onClick={() =>
-                                    handleStatusUpdate(
-                                      interview._id,
-                                      "succeeded"
-                                    )
-                                  }
-                                >
-                                  <CheckCircle2Icon className="h-4 w-4 mr-2" />
-                                  Pass
-                                </Button>
-                                <Button
-                                  variant="destructive"
-                                  className="flex-1"
-                                  onClick={() =>
-                                    handleStatusUpdate(interview._id, "failed")
-                                  }
-                                >
-                                  <XCircleIcon className="h-4 w-4 mr-2" />
-                                  Fail
-                                </Button>
-                              </div>
-                            )}
-                            {(interview.status === "completed" || interview.status === "succeeded" || interview.status === "failed") && (
-                              <div className="mt-2">
-                                <CommentDialog interviewId={interview._id} />
-                              </div>
-                            )}
-                          </CardFooter>
-                        </Card>
-                      );
-                    }
-                  )}
+              ) : interviews.length > 0 ? (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {interviews.map((interview) => (
+                    <MeetingCard key={interview._id} interview={interview} />
+                  ))}
                 </div>
-              </section>
-            )
+              ) : (
+                <div className="text-center py-12 text-muted-foreground">
+                  You have no scheduled interviews at the moment
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
-    </div>
+    </>
   );
 }
-export default DashboardPage; 

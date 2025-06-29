@@ -1,6 +1,5 @@
 "use client";
 
-import LoaderUI from "@/components/LoaderUI";
 import MeetingRoom from "@/components/MeetingRoom";
 import MeetingSetup from "@/components/MeetingSetup";
 import useGetCallById from "@/hooks/useGetCallById";
@@ -16,7 +15,7 @@ function MeetingPage() {
 
   const [isSetupComplete, setIsSetupComplete] = useState(false);
 
-  if (!isLoaded || isCallLoading) return <LoaderUI />;
+  if (!isLoaded || isCallLoading) return null;
 
   if (!call) {
     return (
