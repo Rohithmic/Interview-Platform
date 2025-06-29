@@ -64,9 +64,9 @@ export default function LandingPage() {
             From scheduling to evaluation, we provide all the tools you need for successful technical interviews.
           </p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="flex flex-col md:flex-row justify-center items-stretch gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="text-center p-6">
+            <Card key={index} className="text-center p-6 flex-1 max-w-xs mx-auto">
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <feature.icon className="h-6 w-6 text-primary" />
               </div>

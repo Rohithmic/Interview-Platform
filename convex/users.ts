@@ -56,6 +56,7 @@ export const syncUser = mutation({
         name: args.name,
         email: args.email,
         image: args.image,
+        roleSetByUser: false,
       });
     }
 
@@ -91,8 +92,12 @@ export const syncUser = mutation({
 
     // Create new user
     return await ctx.db.insert("users", {
-      ...args,
+      name: args.name,
+      email: args.email,
+      image: args.image,
       role,
+      clerkId: args.clerkId,
+      roleSetByUser: false,
     });
   },
 });
@@ -143,53 +148,29 @@ export const setUserRole = mutation({
     role: v.union(v.literal("candidate"), v.literal("interviewer")),
   },
   handler: async (ctx, args) => {
-    // Get the current user from Clerk
-    let currentRole: "candidate" | "interviewer" | null = null;
-    try {
-      const clerkUser = await clerk.users.getUser(args.clerkId);
-      const unsafeRole = clerkUser.unsafeMetadata?.role;
-      const publicRole = clerkUser.publicMetadata?.role;
-      
-      // Type-safe role checking
-      if (unsafeRole === "candidate" || unsafeRole === "interviewer") {
-        currentRole = unsafeRole;
-      } else if (publicRole === "candidate" || publicRole === "interviewer") {
-        currentRole = publicRole;
-      }
-    } catch (e) {
-      // If we can't fetch from Clerk, check the database
-      const existingUser = await ctx.db
-        .query("users")
-        .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
-        .first();
-      
-      if (existingUser) {
-        currentRole = existingUser.role;
-      }
-    }
-
-    // If user already has a role, prevent role change
-    if (currentRole === "candidate" || currentRole === "interviewer") {
-      throw new Error("Role cannot be changed once set. Please contact support if you need assistance.");
-    }
-
     // Check if user exists in database
     const user = await ctx.db
       .query("users")
       .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
       .first();
-    
+
     if (user) {
-      // Update existing user's role
-      await ctx.db.patch(user._id, { role: args.role });
+      // If roleSetByUser is true, prevent role change
+      if (user.roleSetByUser) {
+        throw new Error("Role cannot be changed once set. Please contact support if you need assistance.");
+      }
+      // Update existing user's role and set roleSetByUser to true
+      await ctx.db.patch(user._id, { role: args.role, roleSetByUser: true });
       return { success: true };
     } else {
-      // Create new user with role
+      // Create new user with role and set roleSetByUser to true
       await ctx.db.insert("users", {
         clerkId: args.clerkId,
         role: args.role,
         name: "", // Will be updated by syncUser
         email: "", // Will be updated by syncUser
+        image: undefined,
+        roleSetByUser: true,
       });
       return { success: true };
     }

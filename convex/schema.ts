@@ -8,6 +8,7 @@ export default defineSchema({
     image: v.optional(v.string()),
     role: v.union(v.literal("candidate"), v.literal("interviewer")),
     clerkId: v.string(),
+    roleSetByUser: v.boolean(),
   }).index("by_clerk_id", ["clerkId"]),
 
   interviews: defineTable({

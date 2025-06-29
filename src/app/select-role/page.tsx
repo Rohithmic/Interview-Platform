@@ -50,10 +50,18 @@ export default function SelectRolePage() {
       await user.update({ unsafeMetadata: { role } });
       // Redirect to dashboard
       router.replace("/dashboard");
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to set role:", err);
-      alert("Failed to set role. Please try again.");
-      setIsProcessing(false);
+      if (
+        err?.message?.includes("Role cannot be changed once set") ||
+        err?.toString()?.includes("Role cannot be changed once set")
+      ) {
+        alert("Your role has already been set and cannot be changed. Redirecting to dashboard.");
+        router.replace("/dashboard");
+      } else {
+        alert("Failed to set role. Please try again.");
+        setIsProcessing(false);
+      }
     }
   };
 
